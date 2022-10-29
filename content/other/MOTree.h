@@ -1,0 +1,2 @@
+- u ancestor of v: tin[u] -> tin[v]
+- u not ancestor of v: tout[u] -> tin[v] + tin[lca(u, v)]
