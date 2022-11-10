@@ -1,65 +1,48 @@
-struct Node{
-	int l, r, val;
+struct Node {
+    int val;
+    Node *l, *r;
+
+    Node(ll x) : val(x), l(nullptr), r(nullptr) {}
+    Node(Node *ll, Node *rr) : val(0), l(ll), r(rr) {}
 };
- 
-int n, cur;
-int a[100005], pos[100005], root[100005];
-Node segtree[2400005];
- 
-int build(int l, int r) {
-	int id = ++cur;
-	if (l == r) segtree[id].val = 1;
-	else {
-		int m = (l + r)/2;
-		int idL = build(l, m), idR = build(m + 1, r);
-		segtree[id].val = segtree[idL].val + segtree[idR].val;
-		segtree[id].l = idL; segtree[id].r = idR;
-	}
-	return id;
+
+int n, a[100001]; // The initial array and its size
+Node* roots[100001]; // The persistent array's roots
+
+Node* build(int l = 0, int r = n - 1) {
+    if (l == r) return new Node(a[l]);
+    int mid = (l + r) / 2;
+    return new Node(build(l, mid), build(mid + 1, r));
 }
- 
-int update(int id, int l, int r, int pos) {
-	int idN = ++cur;
-	if (l == r) segtree[idN].val = 0;
-	else {
-		int m = (l + r)/2;
-		if (pos <= m) {
-			int idL = update(segtree[id].l, l, m, pos), idR = segtree[id].r;
-			segtree[idN].val = segtree[idL].val + segtree[idR].val;
-			segtree[idN].l = idL; segtree[idN].r = idR;
-		}
-		else {
-			int idL = segtree[id].l, idR = update(segtree[id].r, m + 1, r, pos);
-			segtree[idN].val = segtree[idL].val + segtree[idR].val;
-			segtree[idN].l = idL; segtree[idN].r = idR;
-		}
-	}
-	return idN;
+
+Node* update(Node* node, int val, int pos, int l = 0, int r = n - 1) {
+    if (l == r) return new Node(val);
+    int mid = (l + r) / 2;
+    if (pos > mid) return new Node(node->l, update(node->r, val, pos, mid + 1, r));
+    else return new Node(update(node->l, val, pos, l, mid), node->r);
 }
- 
-pii query(int id, int l, int r, int pos, int val) {
-	if (r < pos) return {-1, 0};
-	if (l >= pos) {
-		if (segtree[id].val < val) return {-1, segtree[id].val};
-		while (l != r) {
-			int m = (l + r)/2;
-			if (segtree[segtree[id].l].val >= val) {
-				id = segtree[id].l;
-				r = m;
-			}
-			else {
-				val -= segtree[segtree[id].l].val;
-				id = segtree[id].r;
-				l = m + 1;
-			}
-		}
-		return {l, 0};
-	}
- 
-	int m = (l + r)/2;
-	auto p1 = query(segtree[id].l, l, m, pos, val);
-	if (p1.first != -1) return p1;
-	auto p2 = query(segtree[id].r, m + 1, r, pos, val - p1.second);
-	if (p2.first != -1) return p2;
-	return {-1, p1.second + p2.second};
+
+int query(Node* node, int pos, int l = 0, int r = n - 1) {
+    if (l == r) return node->val;
+    int mid = (l + r) / 2;
+    if (pos > mid) return query(node->r, pos, mid + 1, r);
+    return query(node->l, pos, l, mid);
+}
+
+int get_item(int index, int time) {
+    // Gets the array item at a given index and time
+    return query(roots[time], index);
+}
+
+void update_item(int index, int value, int prev_time, int curr_time) {
+    // Updates the array item at a given index and time
+    roots[curr_time] = update(roots[prev_time], index, value);
+}
+
+void init_arr(int nn, int* init) {
+    // Initializes the persistent array, given an input array
+    n = nn;
+    for (int i = 0; i < n; i++)
+        a[i] = init[i];
+    roots[0] = build();
 }
