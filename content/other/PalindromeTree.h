@@ -1,16 +1,11 @@
 // Palindrome tree.
 
-typedef long long ll;
-
-const int maxn = 3e5+5;
-
-int lnk[maxn], go[maxn][26], len[maxn];
-ll dp[maxn];
+int lnk[MAXN], go[MAXN][26], len[MAXN];
+ll dp[MAXN];
 // suffix link, transition, length
 
 void init(string str){
-    len[0]=-1;
-    len[1]=0;
+    len[0] = -1, len[1] = 0;
     int crr = 1, cnt = 2;
     for(int i = 1; i < str.length(); i++){
         int id = str[i]-'a';

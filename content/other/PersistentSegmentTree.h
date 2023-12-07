@@ -1,48 +1,75 @@
-struct Node {
-    int val;
-    Node *l, *r;
+struct SegTree
+{
+    struct Node
+    {
+        ll l=0, r=0, sum=0;
+        Node(){}
+        Node(ll l, ll r, ll sum): l(l), r(r), sum(sum) {}
+    };
 
-    Node(ll x) : val(x), l(nullptr), r(nullptr) {}
-    Node(Node *ll, Node *rr) : val(0), l(ll), r(rr) {}
+    vector <ll> ver;
+    vector <Node> St;
+
+    SegTree (ll n)
+    {
+        ver.pb(build(1, n));
+    }
+
+    ll build(ll Start, ll End)
+    {
+        if (Start==End)
+        {
+            St.emplace_back(0, 0, 0);
+            return St.size()-1;
+        }
+        ll mid=(Start+End)/2;
+        ll L=build(Start, mid), R=build(mid+1, End);
+        St.emplace_back(L, R, 0);
+        return St.size()-1;
+    }
+
+    ll update(ll i, ll Start, ll End, ll idx, ll val)
+    {
+        if (Start==End)
+        {
+            ll sum=St[i].sum^val;
+            St.emplace_back(0, 0, sum);
+            return St.size()-1;
+        }
+        ll mid=(Start+End)/2, L, R; 
+        if (idx<=mid)
+        {
+            L=update(St[i].l, Start, mid, idx, val);
+            R=St[i].r;
+        }
+        else
+        {
+            L=St[i].l;
+            R=update(St[i].r, mid+1, End, idx, val);
+        }
+        ll sum=St[L].sum^St[R].sum;
+        St.emplace_back(L, R, sum);
+        return St.size()-1;
+    }
+
+    ll query(ll i, ll Start, ll End, ll l, ll r)
+    {
+        if (Start>r || End<l) return 0;
+        if (Start>=l && End<=r) return St[i].sum;
+        ll mid=(Start+End)/2;
+        ll q1=query(St[i].l, Start, mid, l, r), q2=query(St[i].r, mid+1, End, l, r);
+        return q1^q2;
+    }
+
+    void Update(ll n, ll l, ll r, ll val)
+    {
+        ll idx=update(ver.back(), 1, n, r, val); ver.pb(idx);
+        if (l>1) idx=update(ver.back(), 1, n, l-1, val), ver.pb(idx);
+    }
+
+    ll Query(ll n, ll v, ll idx)
+    {
+        if (idx==0) return 0;
+        return query(v, 1, n, idx, n);
+    }
 };
-
-int n, a[100001]; // The initial array and its size
-Node* roots[100001]; // The persistent array's roots
-
-Node* build(int l = 0, int r = n - 1) {
-    if (l == r) return new Node(a[l]);
-    int mid = (l + r) / 2;
-    return new Node(build(l, mid), build(mid + 1, r));
-}
-
-Node* update(Node* node, int val, int pos, int l = 0, int r = n - 1) {
-    if (l == r) return new Node(val);
-    int mid = (l + r) / 2;
-    if (pos > mid) return new Node(node->l, update(node->r, val, pos, mid + 1, r));
-    else return new Node(update(node->l, val, pos, l, mid), node->r);
-}
-
-int query(Node* node, int pos, int l = 0, int r = n - 1) {
-    if (l == r) return node->val;
-    int mid = (l + r) / 2;
-    if (pos > mid) return query(node->r, pos, mid + 1, r);
-    return query(node->l, pos, l, mid);
-}
-
-int get_item(int index, int time) {
-    // Gets the array item at a given index and time
-    return query(roots[time], index);
-}
-
-void update_item(int index, int value, int prev_time, int curr_time) {
-    // Updates the array item at a given index and time
-    roots[curr_time] = update(roots[prev_time], index, value);
-}
-
-void init_arr(int nn, int* init) {
-    // Initializes the persistent array, given an input array
-    n = nn;
-    for (int i = 0; i < n; i++)
-        a[i] = init[i];
-    roots[0] = build();
-}
