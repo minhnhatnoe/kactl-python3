@@ -9,35 +9,34 @@
  * Status: stress-tested
  */
 
-const int ALPH = 26;
 struct suffix_automaton{
     struct node{
-        int len, link = -1;
-        array<int, ALPH> next;
-        node(int len): len(len) {next.fill(-1);}
-        node(int len, int link, array<int, ALPH> &next): len(len), link(link), next(next) {}
+        int len, link = -1, nxt[26];
+        node(int len): len(len) {fill(nxt, nxt + 26, -1);}
+        node(int len, int link, int snxt[26]): len(len), link(link) {memcpy(nxt, snxt, sizeof nxt);}
     };
     vector<node> g = {0};
-    int make(int p, char c, node &&a){ // Make new node
-        for (int q = g[p].next[c]; p != -1 && g[p].next[c] == q; p = g[p].link)
-            g[p].next[c] = g.size();
-        g.emplace_back(move(a));
+    int ptrans(int p, char c, int nxt){ // Propagate new transition
+        for (int q = g[p].nxt[c]; p != -1 && g[p].nxt[c] == q; p = g[p].link)
+            g[p].nxt[c] = nxt;
         return p;
     }
-    int sttrans(int p, char c){ // Strict transition
+    int fbuild(int p, char c){ // Transition exact length
         if (p == -1) return 0;
-        int q = g[p].next[c];
+        int q = g[p].nxt[c];
         if (g[p].len + 1 == g[q].len) return q;
-        make(p, c, {g[p].len+1, g[q].link, g[q].next});
-        return g[q].link = g.size()-1;
+        int qc = g.size();
+        g.emplace_back(g[p].len+1, g[q].link, g[q].nxt);
+        ptrans(p, c, qc);
+        return g[q].link = qc;
     }
-    int itmove(int last, char c){ // Progress iterator
-        if (g[last].next[c] != -1){
-            sttrans(last, c);
-            return g[last].next[c];
-        }
-        int p = make(last, c, {g[last].len+1});
-        int cr = g.size()-1; g[cr].link = sttrans(p, c);
-        return g[last].next[c];
+    int addc(int p, char c){ // Progress iterator
+        if (g[p].nxt[c] != -1)
+            return fbuild(p, c);
+        int nc = g.size();
+        g.emplace_back(g[p].len+1);
+        int r = fbuild(ptrans(p, c, nc), c);
+        g[nc].link = r;
+        return nc;
     }
 };
